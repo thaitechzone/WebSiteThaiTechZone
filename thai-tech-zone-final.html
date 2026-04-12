@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thai Tech Zone - Modern Tech Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Outfit', sans-serif; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Syne', sans-serif; font-weight: 700; }
+        .smooth { transition: all 0.3s ease-in-out; }
+        .glow { box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade { animation: fadeIn 0.6s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-950 text-white">
+    <!-- Navigation -->
+    <nav class="fixed w-full top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-gradient-to-br from-cyan-500 to-blue-500 p-2 rounded-lg">
+                    <span class="text-white font-bold text-xl">⚙️</span>
+                </div>
+                <span class="font-bold text-xl hidden sm:inline bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    ThaiTechZone
+                </span>
+            </div>
+
+            <div class="hidden md:flex gap-8 items-center">
+                <a href="#home" onclick="smoothScroll(event, 'home')" class="text-gray-300 hover:text-cyan-400 smooth font-medium cursor-pointer">🏠 Home</a>
+                <a href="#courses" onclick="smoothScroll(event, 'courses')" class="text-gray-300 hover:text-cyan-400 smooth font-medium cursor-pointer">📚 Courses</a>
+                <a href="#about" onclick="smoothScroll(event, 'about')" class="text-gray-300 hover:text-cyan-400 smooth font-medium cursor-pointer">ℹ️ About</a>
+                <a href="#contact" onclick="smoothScroll(event, 'contact')" class="text-gray-300 hover:text-cyan-400 smooth font-medium cursor-pointer">📧 Contact</a>
+            </div>
+
+            <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 smooth">☀️</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pt-32 pb-24">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-cyan-500/20 to-transparent rounded-full blur-3xl opacity-50"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl opacity-50"></div>
+
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 items-center animate-fade">
+                <div class="space-y-8">
+                    <div class="space-y-4">
+                        <div class="inline-block">
+                            <span class="px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
+                                ยินดีต้อนรับ ThaiTechZone
+                            </span>
+                        </div>
+                        <h1 class="text-5xl md:text-6xl font-bold leading-tight">
+                            Master <span class="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">LabVIEW</span> & AI Automation
+                        </h1>
+                        <p class="text-xl text-gray-300">
+                            ศูนย์สอนโปรแกรม LabVIEW, N8N AI Automation, Python, Robotics สำหรับนักวิชาการ นักเรียน นักศึกษา
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button class="px-8 py-4 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/30 smooth transform hover:scale-105">
+                            เริ่มเรียนรู้ →
+                        </button>
+                        <button class="px-8 py-4 rounded-lg font-semibold border-2 border-slate-800 hover:bg-slate-800 smooth">
+                            ดูคอร์สทั้งหมด
+                        </button>
+                    </div>
+
+                    <div class="flex gap-6 pt-8">
+                        <div>
+                            <p class="text-2xl font-bold text-cyan-400">500+</p>
+                            <p class="text-gray-400">นักเรียนสำเร็จ</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-cyan-400">100+</p>
+                            <p class="text-gray-400">โครงการ</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-cyan-400">24/7</p>
+                            <p class="text-gray-400">Support</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative h-96">
+                    <div class="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-3xl opacity-10 blur-3xl"></div>
+                    <div class="relative h-full rounded-3xl border-2 border-slate-800 bg-slate-800/50 backdrop-blur-sm flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="text-6xl mb-4">⚙️</div>
+                            <p class="text-gray-400">LabVIEW & AI Platform</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <h2 class="text-4xl font-bold text-center mb-16">ทำไมเลือก ThaiTechZone?</h2>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="p-8 rounded-2xl border-2 border-slate-800 bg-slate-900/50 hover:bg-slate-800/50 smooth transform hover:-translate-y-2 group cursor-pointer">
+                <div class="mb-4 inline-block p-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 group-hover:from-cyan-500/40 group-hover:to-blue-500/40 smooth text-2xl">⚡</div>
+                <h3 class="text-xl font-bold mb-2">เนื้อหาเชิงลึก</h3>
+                <p class="text-gray-400">คอร์สออกแบบมาเพื่อให้ความรู้จริงจากผู้เชี่ยวชาญ</p>
+            </div>
+            <div class="p-8 rounded-2xl border-2 border-slate-800 bg-slate-900/50 hover:bg-slate-800/50 smooth transform hover:-translate-y-2 group cursor-pointer">
+                <div class="mb-4 inline-block p-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 group-hover:from-cyan-500/40 group-hover:to-blue-500/40 smooth text-2xl">📚</div>
+                <h3 class="text-xl font-bold mb-2">การสอนมืออาชีพ</h3>
+                <p class="text-gray-400">เรียนจากผู้เชี่ยวชาญที่มีประสบการณ์การทำงาน</p>
+            </div>
+            <div class="p-8 rounded-2xl border-2 border-slate-800 bg-slate-900/50 hover:bg-slate-800/50 smooth transform hover:-translate-y-2 group cursor-pointer">
+                <div class="mb-4 inline-block p-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 group-hover:from-cyan-500/40 group-hover:to-blue-500/40 smooth text-2xl">👥</div>
+                <h3 class="text-xl font-bold mb-2">ชุมชนสนับสนุน</h3>
+                <p class="text-gray-400">เข้าร่วมชุมชนนักเรียนและผู้สอนที่ใช้งาน</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Courses Preview -->
+    <section id="courses" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold mb-4">📚 คอร์สเรียนของเรา</h2>
+            <p class="text-xl text-gray-300">เลือกคอร์สที่เหมาะกับระดับของคุณ</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="p-6 rounded-2xl border-2 border-slate-800 bg-slate-900 hover:bg-slate-800 smooth transform hover:-translate-y-2 cursor-pointer group">
+                <div class="text-4xl mb-4">🎓</div>
+                <h3 class="text-xl font-bold mb-2">LabVIEW Fundamentals</h3>
+                <p class="text-sm text-gray-400 mb-4">เรียนรู้พื้นฐาน LabVIEW จากเบื้องต้น</p>
+                <div class="flex justify-between items-center mb-4 pb-4 border-t border-slate-700">
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300">Beginner</span>
+                    <span class="text-sm text-gray-400">250+ นักเรียน</span>
+                </div>
+                <button class="w-full py-2 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white group-hover:shadow-lg smooth">ดูรายละเอียด</button>
+            </div>
+
+            <div class="p-6 rounded-2xl border-2 border-slate-800 bg-slate-900 hover:bg-slate-800 smooth transform hover:-translate-y-2 cursor-pointer group">
+                <div class="text-4xl mb-4">⚙️</div>
+                <h3 class="text-xl font-bold mb-2">Advanced LabVIEW</h3>
+                <p class="text-sm text-gray-400 mb-4">โปรแกรมขั้นสูง LabVIEW สำหรับการประยุกต์จริง</p>
+                <div class="flex justify-between items-center mb-4 pb-4 border-t border-slate-700">
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300">Advanced</span>
+                    <span class="text-sm text-gray-400">120+ นักเรียน</span>
+                </div>
+                <button class="w-full py-2 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white group-hover:shadow-lg smooth">ดูรายละเอียด</button>
+            </div>
+
+            <div class="p-6 rounded-2xl border-2 border-slate-800 bg-slate-900 hover:bg-slate-800 smooth transform hover:-translate-y-2 cursor-pointer group">
+                <div class="text-4xl mb-4">🤖</div>
+                <h3 class="text-xl font-bold mb-2">N8N AI Automation</h3>
+                <p class="text-sm text-gray-400 mb-4">สร้างระบบอัตโนมัติด้วย N8N และ AI</p>
+                <div class="flex justify-between items-center mb-4 pb-4 border-t border-slate-700">
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300">Intermediate</span>
+                    <span class="text-sm text-gray-400">180+ นักเรียน</span>
+                </div>
+                <button class="w-full py-2 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white group-hover:shadow-lg smooth">ดูรายละเอียด</button>
+            </div>
+
+            <div class="p-6 rounded-2xl border-2 border-slate-800 bg-slate-900 hover:bg-slate-800 smooth transform hover:-translate-y-2 cursor-pointer group">
+                <div class="text-4xl mb-4">🐍</div>
+                <h3 class="text-xl font-bold mb-2">Python for IoT</h3>
+                <p class="text-sm text-gray-400 mb-4">พัฒนาระบบ IoT ด้วย Python</p>
+                <div class="flex justify-between items-center mb-4 pb-4 border-t border-slate-700">
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300">Intermediate</span>
+                    <span class="text-sm text-gray-400">95+ นักเรียน</span>
+                </div>
+                <button class="w-full py-2 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white group-hover:shadow-lg smooth">ดูรายละเอียด</button>
+            </div>
+
+            <div class="p-6 rounded-2xl border-2 border-slate-800 bg-slate-900 hover:bg-slate-800 smooth transform hover:-translate-y-2 cursor-pointer group">
+                <div class="text-4xl mb-4">🦾</div>
+                <h3 class="text-xl font-bold mb-2">Robotics Control</h3>
+                <p class="text-sm text-gray-400 mb-4">ควบคุมหุ่นยนต์ด้วย LabVIEW</p>
+                <div class="flex justify-between items-center mb-4 pb-4 border-t border-slate-700">
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300">Advanced</span>
+                    <span class="text-sm text-gray-400">65+ นักเรียน</span>
+                </div>
+                <button class="w-full py-2 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white group-hover:shadow-lg smooth">ดูรายละเอียด</button>
+            </div>
+
+            <div class="p-6 rounded-2xl border-2 border-slate-800 bg-slate-900 hover:bg-slate-800 smooth transform hover:-translate-y-2 cursor-pointer group">
+                <div class="text-4xl mb-4">📊</div>
+                <h3 class="text-xl font-bold mb-2">Data Visualization</h3>
+                <p class="text-sm text-gray-400 mb-4">สร้างแดชบอร์ด และ visualizations</p>
+                <div class="flex justify-between items-center mb-4 pb-4 border-t border-slate-700">
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300">Intermediate</span>
+                    <span class="text-sm text-gray-400">140+ นักเรียน</span>
+                </div>
+                <button class="w-full py-2 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white group-hover:shadow-lg smooth">ดูรายละเอียด</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <h2 class="text-4xl font-bold mb-6">ℹ️ เกี่ยวกับเรา</h2>
+                <p class="text-lg text-gray-300 mb-4">Thai Tech Zone ก่อตั้งขึ้นเพื่อนำเสนอการศึกษาด้านเทคโนโลยีขั้นสูงแก่นักเรียนชาวไทย</p>
+                <p class="text-lg text-gray-300 mb-4">เรามุ่งเน้นที่LabVIEW, N8N AI Automation, Python, Robotics และเทคโนโลยีที่เป็นแนวหน้า</p>
+                <p class="text-lg text-gray-300">ด้วยอาจารย์ผู้มีประสบการณ์และหลักสูตรที่ทันสมัย เรากำลังสร้างความฝันให้เป็นจริง</p>
+            </div>
+            <div class="h-96 rounded-3xl border-2 border-slate-800 bg-slate-800/50 backdrop-blur-sm flex items-center justify-center">
+                <div class="text-6xl">👥</div>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8 mt-16">
+            <div class="p-8 rounded-2xl border-2 border-slate-800 text-center">
+                <div class="text-4xl font-bold text-cyan-400 mb-2">5+</div>
+                <p class="text-gray-300">ปีประสบการณ์</p>
+            </div>
+            <div class="p-8 rounded-2xl border-2 border-slate-800 text-center">
+                <div class="text-4xl font-bold text-cyan-400 mb-2">500+</div>
+                <p class="text-gray-300">นักเรียนสำเร็จ</p>
+            </div>
+            <div class="p-8 rounded-2xl border-2 border-slate-800 text-center">
+                <div class="text-4xl font-bold text-cyan-400 mb-2">20+</div>
+                <p class="text-gray-300">คอร์สที่มีคุณภาพ</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="relative overflow-hidden border-t border-b border-slate-800 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl font-bold mb-6">พร้อมจะเริ่มต้นแล้วหรือ?</h2>
+            <p class="text-xl text-gray-300 mb-8">เลือกคอร์สของคุณและเริ่มต้นการศึกษาวันนี้</p>
+            <button class="px-12 py-4 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/30 smooth transform hover:scale-105">
+                ลงทะเบียนเลย ✨
+            </button>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold mb-4">📧 ติดต่อเรา</h2>
+            <p class="text-xl text-gray-300">มีคำถามหรือต้องการข้อมูล? เราอยู่ที่นี่เพื่อช่วยเหลือ</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-12">
+            <div class="p-8 rounded-2xl border-2 border-slate-800">
+                <h3 class="text-2xl font-bold mb-6">ส่งข้อความถึงเรา</h3>
+                <form class="space-y-4" onsubmit="return handleSubmit(event)">
+                    <input type="text" placeholder="ชื่อของคุณ" required class="w-full px-4 py-2 rounded-lg border-2 border-slate-700 bg-slate-800 text-white focus:outline-none focus:border-cyan-500 smooth">
+                    <input type="email" placeholder="อีเมลของคุณ" required class="w-full px-4 py-2 rounded-lg border-2 border-slate-700 bg-slate-800 text-white focus:outline-none focus:border-cyan-500 smooth">
+                    <textarea rows="4" placeholder="ข้อความของคุณ" required class="w-full px-4 py-2 rounded-lg border-2 border-slate-700 bg-slate-800 text-white focus:outline-none focus:border-cyan-500 smooth"></textarea>
+                    <button type="submit" class="w-full py-3 rounded-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg smooth">ส่งข้อความ</button>
+                </form>
+            </div>
+
+            <div class="space-y-6">
+                <div class="p-8 rounded-2xl border-2 border-slate-800">
+                    <div class="text-4xl mb-4">📧</div>
+                    <h3 class="text-xl font-bold mb-2">อีเมล</h3>
+                    <p class="text-gray-300">info@thaitechzone.com</p>
+                </div>
+                <div class="p-8 rounded-2xl border-2 border-slate-800">
+                    <div class="text-4xl mb-4">📞</div>
+                    <h3 class="text-xl font-bold mb-2">โทรศัพท์</h3>
+                    <p class="text-gray-300">+66-XXX-XXXX-XX</p>
+                </div>
+                <div class="p-8 rounded-2xl border-2 border-slate-800">
+                    <div class="text-4xl mb-4">📍</div>
+                    <h3 class="text-xl font-bold mb-2">ที่อยู่</h3>
+                    <p class="text-gray-300">Bangkok, Thailand</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-900/50 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center text-gray-400">
+                <p>&copy; 2026 Thai Tech Zone. All rights reserved. | Crafted with passion in Thailand 🇹🇭</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function smoothScroll(e, id) {
+            e.preventDefault();
+            const section = document.getElementById(id);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function toggleDarkMode() {
+            alert('Dark mode toggle ready! (ในการใช้งานจริง ฟีเจอร์นี้จะสลับระหว่าง dark และ light themes)');
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            alert('ขอบคุณที่ติดต่อเรา! เราจะตอบกลับโดยเร็วที่สุด');
+            e.target.reset();
+            return false;
+        }
+
+        // Add scroll effect to nav
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+            } else {
+                nav.style.boxShadow = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
