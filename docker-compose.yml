@@ -1,16 +1,26 @@
 version: '3.8'
 
-# ==================== DEVELOPMENT ====================
-# รันครั้งแรก  : docker compose up -d
-# Update backend : docker compose up -d --build --no-deps backend
-# Update frontend: docker compose up -d --build --no-deps frontend
-# DB ไม่กระทบ   : postgres ไม่มี build, data เก็บใน named volume
+# ==================== UNIFIED COMPOSE (dev + prod) ====================
+#
+# ── LOCAL DEV ──────────────────────────────────────────────────────────
+#   รันครั้งแรก   : docker compose --profile dev up -d
+#   Update backend : docker compose --profile dev up -d --build --no-deps backend-dev
+#   Update frontend: docker compose --profile dev up -d --build --no-deps frontend-dev
+#   หยุดทั้งหมด   : docker compose --profile dev down
+#
+# ── PRODUCTION ─────────────────────────────────────────────────────────
+#   รันครั้งแรก   : docker compose --profile prod up -d --build
+#   Update backend : docker compose --profile prod up -d --build --no-deps backend
+#   Update frontend: docker compose --profile prod up -d --build --no-deps frontend
+#   หยุดทั้งหมด   : docker compose --profile prod down
+#
+# ⚠️  ห้ามรัน: docker compose down -v  (จะลบ volume ข้อมูล DB)
+# ======================================================================
 
 services:
 
   # ─────────────────────────────────────────────
-  # DATABASE — ไม่ build, data อยู่ใน named volume
-  # ไม่ถูกกระทบเมื่อ update backend หรือ frontend
+  # DATABASE — ทำงานทั้ง dev และ prod
   # ─────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
@@ -21,13 +31,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-thaitechzone2024}
       POSTGRES_DB: ${DB_NAME:-thaitechzone_db}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
-    ports:
-      - "5432:5432"
     volumes:
-      # Data อยู่ใน named volume — ไม่หายแม้ container ถูก recreate
       - postgres_data:/var/lib/postgresql/data
-      # schema.sql รันแค่ครั้งแรกที่ volume ว่าง
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "${DB_PORT:-5432}:5432"   # dev: เปิดไว้ | prod: ปิดด้วย DB_PORT= ใน .env
     networks:
       - thaitechzone-network
     healthcheck:
@@ -35,12 +43,35 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   # ─────────────────────────────────────────────
-  # BACKEND — hot-reload ด้วย nodemon
-  # Update: docker compose up -d --build --no-deps backend
+  # PGADMIN — dev เท่านั้น
   # ─────────────────────────────────────────────
-  backend:
+  pgadmin:
+    profiles: [dev]
+    image: dpage/pgadmin4:latest
+    container_name: thaitechzone-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@thaitechzone.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - thaitechzone-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────
+  # BACKEND DEV — hot-reload ด้วย nodemon
+  # ─────────────────────────────────────────────
+  backend-dev:
+    profiles: [dev]
     build:
       context: ./backend
       target: development
@@ -69,10 +100,10 @@ services:
       start_period: 20s
 
   # ─────────────────────────────────────────────
-  # FRONTEND — hot-reload ด้วย Vite
-  # Update: docker compose up -d --build --no-deps frontend
+  # FRONTEND DEV — hot-reload ด้วย Vite
   # ─────────────────────────────────────────────
-  frontend:
+  frontend-dev:
+    profiles: [dev]
     image: node:20-alpine
     container_name: thaitechzone-frontend
     working_dir: /app
@@ -88,32 +119,85 @@ services:
     networks:
       - thaitechzone-network
     depends_on:
-      backend:
+      backend-dev:
         condition: service_healthy
 
   # ─────────────────────────────────────────────
-  # PGADMIN — Database management UI
+  # BACKEND PROD — built image, ไม่ expose port
+  # nginx รับ request แทน
   # ─────────────────────────────────────────────
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: thaitechzone-pgadmin
-    restart: unless-stopped
+  backend:
+    profiles: [prod]
+    build:
+      context: ./backend
+      target: production
+    image: thaitechzone-backend:latest
+    container_name: thaitechzone-backend
+    restart: always
+    env_file:
+      - .env.production
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@thaitechzone.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "5050:80"
+      DB_HOST: postgres
+      NODE_ENV: production
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - uploads_data:/app/uploads
     networks:
       - thaitechzone-network
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ─────────────────────────────────────────────
+  # FRONTEND PROD — built image, ไม่ expose port
+  # ─────────────────────────────────────────────
+  frontend:
+    profiles: [prod]
+    build:
+      context: ./frontend
+      target: production
+      args:
+        VITE_API_URL: /api
+    image: thaitechzone-frontend:latest
+    container_name: thaitechzone-frontend
+    restart: always
+    networks:
+      - thaitechzone-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ─────────────────────────────────────────────
+  # NGINX PROD — reverse proxy
+  # expose port 8080 → Nginx Proxy Manager forward มาที่นี่
+  # ─────────────────────────────────────────────
+  nginx:
+    profiles: [prod]
+    image: nginx:alpine
+    container_name: thaitechzone-nginx
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - thaitechzone-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
 
 volumes:
-  postgres_data:       # ข้อมูล DB — ห้าม docker compose down -v
+  postgres_data:          # ⚠️ ข้อมูล DB — ห้ามลบ
+  uploads_data:           # ⚠️ ไฟล์ที่ upload — ห้ามลบ
   pgadmin_data:
   backend_node_modules:
   frontend_node_modules:
