@@ -1,14 +1,16 @@
 // Thai Tech Zone Backend API Server
 // Node.js + Express + PostgreSQL
 
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Load environment variables FIRST before any other imports
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
-
-// Load environment variables
-dotenv.config();
 
 // Initialize Express app
 const app = express();

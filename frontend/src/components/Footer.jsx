@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Code2, Facebook, Github, Linkedin } from 'lucide-react'
+import { Code2, Globe, GitFork, Share2 } from 'lucide-react'
 
 export default function Footer({ isDark }) {
   const border = isDark ? 'border-slate-800' : 'border-slate-200'
@@ -49,7 +49,7 @@ export default function Footer({ isDark }) {
           <div>
             <h4 className="font-semibold mb-4">ติดตามเรา</h4>
             <div className="flex gap-4">
-              {[Facebook, Github, Linkedin].map((Icon, i) => (
+              {[Globe, GitFork, Share2].map((Icon, i) => (
                 <Icon key={i} size={20} className={`${muted} hover:text-cyan-400 cursor-pointer transition-colors`} />
               ))}
             </div>
