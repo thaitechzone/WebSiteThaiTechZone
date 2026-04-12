@@ -1,0 +1,33 @@
+{
+  "name": "websitethaitechzone",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently --names \"BACKEND,FRONTEND\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "backend": "npm run dev --prefix backend",
+    "frontend": "npm run dev --prefix frontend",
+    "start": "concurrently --names \"BACKEND,FRONTEND\" --prefix-colors \"cyan,magenta\" \"npm run start --prefix backend\" \"npm run dev --prefix frontend\"",
+    "docker:dev": "docker compose up -d",
+    "docker:prod": "docker compose -f docker-compose.prod.yml up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "update:backend": "docker compose -f docker-compose.prod.yml up -d --build --no-deps backend",
+    "update:frontend": "docker compose -f docker-compose.prod.yml up -d --build --no-deps frontend",
+    "db:backup": "docker exec thaitechzone-db pg_dump -U thaitechzone thaitechzone_db > backup.sql"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thaitechzone/WebSiteThaiTechZone.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thaitechzone/WebSiteThaiTechZone/issues"
+  },
+  "homepage": "https://github.com/thaitechzone/WebSiteThaiTechZone#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

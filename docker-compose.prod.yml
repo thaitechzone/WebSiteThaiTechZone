@@ -1,0 +1,120 @@
+version: '3.8'
+
+# ==================== PRODUCTION (VPS + NPM) ====================
+# ใช้ร่วมกับ Nginx Proxy Manager ที่ติดตั้งบน VPS แล้ว
+#
+# NPM ตั้งค่า:
+#   thaitechzone.com     → http://localhost:8080  (frontend)
+#   thaitechzone.com/api → http://localhost:8080  (nginx จัดการต่อ)
+#
+# รันครั้งแรก  : docker compose -f docker-compose.prod.yml up -d --build
+# Update backend : docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
+# Update frontend: docker compose -f docker-compose.prod.yml up -d --build --no-deps frontend
+#
+# ⚠️  ห้ามรัน: docker compose down -v  (จะลบ volume ข้อมูล DB)
+
+services:
+
+  # ─────────────────────────────────────────────
+  # DATABASE — ไม่ expose port ออกภายนอก
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: thaitechzone-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - thaitechzone-network
+    # ไม่มี ports — เข้าถึงได้แค่ภายใน network เท่านั้น
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─────────────────────────────────────────────
+  # BACKEND — ไม่ expose port ออกภายนอก
+  # รับ request ผ่าน nginx ภายใน network เท่านั้น
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      target: production
+    image: thaitechzone-backend:latest
+    container_name: thaitechzone-backend
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      DB_HOST: postgres
+      NODE_ENV: production
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - thaitechzone-network
+    # ไม่มี ports — nginx จัดการ routing ภายใน
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ─────────────────────────────────────────────
+  # FRONTEND — ไม่ expose port ออกภายนอก
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+      args:
+        VITE_API_URL: /api
+    image: thaitechzone-frontend:latest
+    container_name: thaitechzone-frontend
+    restart: always
+    networks:
+      - thaitechzone-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ─────────────────────────────────────────────
+  # NGINX — Internal reverse proxy
+  # expose port 8080 → NPM จะ forward traffic มาที่นี่
+  # ─────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: thaitechzone-nginx
+    restart: always
+    ports:
+      - "8080:80"   # NPM → localhost:8080 → nginx → backend/frontend
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - thaitechzone-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:    # ⚠️ ข้อมูล DB — ห้ามลบ
+  uploads_data:     # ไฟล์ที่ upload — ห้ามลบ
+
+networks:
+  thaitechzone-network:
+    driver: bridge

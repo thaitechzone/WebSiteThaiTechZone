@@ -1,0 +1,123 @@
+version: '3.8'
+
+# ==================== DEVELOPMENT ====================
+# รันครั้งแรก  : docker compose up -d
+# Update backend : docker compose up -d --build --no-deps backend
+# Update frontend: docker compose up -d --build --no-deps frontend
+# DB ไม่กระทบ   : postgres ไม่มี build, data เก็บใน named volume
+
+services:
+
+  # ─────────────────────────────────────────────
+  # DATABASE — ไม่ build, data อยู่ใน named volume
+  # ไม่ถูกกระทบเมื่อ update backend หรือ frontend
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: thaitechzone-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-thaitechzone}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-thaitechzone2024}
+      POSTGRES_DB: ${DB_NAME:-thaitechzone_db}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      # Data อยู่ใน named volume — ไม่หายแม้ container ถูก recreate
+      - postgres_data:/var/lib/postgresql/data
+      # schema.sql รันแค่ครั้งแรกที่ volume ว่าง
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - thaitechzone-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-thaitechzone} -d ${DB_NAME:-thaitechzone_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # BACKEND — hot-reload ด้วย nodemon
+  # Update: docker compose up -d --build --no-deps backend
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: thaitechzone-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    networks:
+      - thaitechzone-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ─────────────────────────────────────────────
+  # FRONTEND — hot-reload ด้วย Vite
+  # Update: docker compose up -d --build --no-deps frontend
+  # ─────────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: thaitechzone-frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    networks:
+      - thaitechzone-network
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────
+  # PGADMIN — Database management UI
+  # ─────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: thaitechzone-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@thaitechzone.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - thaitechzone-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:       # ข้อมูล DB — ห้าม docker compose down -v
+  pgadmin_data:
+  backend_node_modules:
+  frontend_node_modules:
+
+networks:
+  thaitechzone-network:
+    driver: bridge
