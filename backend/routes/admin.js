@@ -319,4 +319,34 @@ router.get('/payments', verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
+router.get('/courses', verifyToken, checkAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (page - 1) * limit;
+    const courses = await pool.query(
+      `SELECT c.*, u.first_name || ' ' || u.last_name AS instructor_name,
+              COUNT(e.id) AS enrollment_count
+       FROM courses c
+       LEFT JOIN users u ON c.instructor_id = u.id
+       LEFT JOIN enrollment e ON c.id = e.course_id
+       GROUP BY c.id, u.first_name, u.last_name
+       ORDER BY c.created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    const countResult = await pool.query('SELECT COUNT(*) as count FROM courses');
+    res.json({
+      data: courses.rows,
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get admin courses error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

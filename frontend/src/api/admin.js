@@ -11,3 +11,6 @@ export const getEnrollments = (params) =>
 
 export const getPayments = (params) =>
   client.get('/admin/payments', { params })
+
+export const getAdminCourses = (params) =>
+  client.get('/admin/courses', { params })
