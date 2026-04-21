@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, Sun, Moon, Code2, LogOut, User, LayoutDashboard } from 'lucide-react'
+import { Menu, X, Sun, Moon, Code2, LogOut, User, LayoutDashboard, ShoppingCart } from 'lucide-react'
+import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 
 export default function Navbar({ isDark, toggleDark }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { isLoggedIn, isAdmin, user, logout } = useAuth()
+  const { count: cartCount } = useCart()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -26,6 +28,7 @@ export default function Navbar({ isDark, toggleDark }) {
   const navLinks = [
     { to: '/', label: 'หน้าหลัก' },
     { to: '/courses', label: 'คอร์ส' },
+    { to: '/shop', label: 'ร้านค้า' },
     { to: '/about', label: 'เกี่ยวกับ' },
     { to: '/contact', label: 'ติดต่อ' },
   ]
@@ -68,6 +71,12 @@ export default function Navbar({ isDark, toggleDark }) {
 
         {/* Right Side */}
         <div className="flex items-center gap-3">
+          <Link to="/cart" className={`relative p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-100 hover:bg-slate-200'}`}>
+            <ShoppingCart size={18} />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-cyan-500 text-white text-[10px] font-bold flex items-center justify-center">{cartCount}</span>
+            )}
+          </Link>
           <button
             onClick={toggleDark}
             className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-100 hover:bg-slate-200'}`}
@@ -149,6 +158,9 @@ export default function Navbar({ isDark, toggleDark }) {
                   )}
                   <Link to="/my-courses" className={`block px-4 py-2 rounded-lg font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                     คอร์สของฉัน
+                  </Link>
+                  <Link to="/my-orders" className={`block px-4 py-2 rounded-lg font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    คำสั่งซื้อของฉัน
                   </Link>
                   <button onClick={handleLogout} className="block w-full text-left px-4 py-2 rounded-lg font-medium text-red-400">
                     ออกจากระบบ

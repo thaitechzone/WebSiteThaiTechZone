@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, BookOpen, TrendingUp, DollarSign, Plus, Pencil, Trash2, X, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, BookOpen, TrendingUp, DollarSign, Plus, Pencil, Trash2, X, Eye, EyeOff, Package, ShoppingBag } from 'lucide-react'
 import { getDashboard, getAdminCourses } from '../api/admin'
 import { createCourse, updateCourse, deleteCourse } from '../api/courses'
+import { getProducts, createProduct, updateProduct, deleteProduct } from '../api/products'
+import { getAdminOrders, updateOrderStatus } from '../api/orders'
 
 const CATEGORIES = ['labview', 'automation', 'python', 'robotics', 'electronics', 'plc', 'scada']
 const LEVELS = ['beginner', 'intermediate', 'advanced']
@@ -201,6 +203,106 @@ function DeleteConfirm({ isDark, course, onClose, onDeleted }) {
   )
 }
 
+// ─── Product Modal ────────────────────────────────────────────────────────────
+const PRODUCT_CATEGORIES = ['development_board', 'sensor', 'module', 'kit', 'accessory']
+const EMPTY_PRODUCT = { name: '', description: '', sku: '', category: 'development_board', price: '', stockQuantity: '', images: '', specs: '', isAvailable: true, isFeatured: false }
+
+function ProductModal({ isDark, product, onClose, onSaved }) {
+  const [form, setForm] = useState(() => product ? {
+    name: product.name || '', description: product.description || '', sku: product.sku || '',
+    category: product.category || 'development_board', price: product.price || '',
+    stockQuantity: product.stock_quantity || '', isAvailable: product.is_available !== false,
+    isFeatured: product.is_featured || false,
+    images: (product.images || []).join('\n'),
+    specs: Object.entries(product.specs || {}).map(([k, v]) => `${k}: ${v}`).join('\n'),
+  } : EMPTY_PRODUCT)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const border = isDark ? 'border-slate-700' : 'border-slate-200'
+  const inputCls = `w-full px-3 py-2 rounded-lg border ${border} ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'} focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm`
+  const labelCls = `block text-xs font-semibold mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const parseSpecs = (text) => {
+    const obj = {}
+    text.split('\n').forEach(line => {
+      const idx = line.indexOf(':')
+      if (idx > 0) obj[line.slice(0, idx).trim()] = line.slice(idx + 1).trim()
+    })
+    return obj
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true); setError(null)
+    try {
+      const payload = {
+        name: form.name, description: form.description, sku: form.sku,
+        category: form.category, price: parseFloat(form.price) || 0,
+        stockQuantity: parseInt(form.stockQuantity) || 0,
+        images: form.images.split('\n').map(s => s.trim()).filter(Boolean),
+        specs: parseSpecs(form.specs),
+        isAvailable: form.isAvailable, isFeatured: form.isFeatured,
+      }
+      if (product) await updateProduct(product.product_id, payload)
+      else await createProduct(payload)
+      onSaved()
+    } catch (err) {
+      setError(err.response?.data?.error || 'เกิดข้อผิดพลาด')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-2 ${border} ${isDark ? 'bg-slate-900' : 'bg-white'} shadow-2xl`}>
+        <div className={`sticky top-0 flex items-center justify-between p-5 border-b ${border} ${isDark ? 'bg-slate-900' : 'bg-white'} z-10`}>
+          <h2 className="text-lg font-bold">{product ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700/30"><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2"><label className={labelCls}>ชื่อสินค้า *</label><input required value={form.name} onChange={e => set('name', e.target.value)} className={inputCls} /></div>
+            <div><label className={labelCls}>SKU *</label><input required value={form.sku} onChange={e => set('sku', e.target.value)} className={inputCls} placeholder="TTZ-001" /></div>
+            <div><label className={labelCls}>ราคา (บาท)</label><input type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} className={inputCls} /></div>
+            <div><label className={labelCls}>หมวดหมู่</label>
+              <select value={form.category} onChange={e => set('category', e.target.value)} className={inputCls}>
+                {PRODUCT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div><label className={labelCls}>สต็อก (ชิ้น)</label><input type="number" min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} className={inputCls} /></div>
+            <div className="col-span-2"><label className={labelCls}>คำอธิบาย</label><textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)} className={inputCls} /></div>
+            <div className="col-span-2"><label className={labelCls}>URL รูปภาพ (ใส่ทีละบรรทัด)</label><textarea rows={3} value={form.images} onChange={e => set('images', e.target.value)} className={inputCls} placeholder="https://example.com/img1.jpg&#10;https://example.com/img2.jpg" /></div>
+            <div className="col-span-2"><label className={labelCls}>ข้อมูลจำเพาะ (key: value ทีละบรรทัด)</label><textarea rows={4} value={form.specs} onChange={e => set('specs', e.target.value)} className={inputCls} placeholder="CPU: ESP32&#10;Flash: 4MB&#10;WiFi: 802.11 b/g/n" /></div>
+            <div className="flex items-center gap-6 col-span-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.isAvailable} onChange={e => set('isAvailable', e.target.checked)} className="w-4 h-4 rounded accent-cyan-500" />
+                <span className="text-sm font-medium">วางขาย</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.isFeatured} onChange={e => set('isFeatured', e.target.checked)} className="w-4 h-4 rounded accent-cyan-500" />
+                <span className="text-sm font-medium">สินค้าแนะนำ</span>
+              </label>
+            </div>
+          </div>
+          {error && <div className="p-3 rounded-lg bg-red-500/20 text-red-400 text-sm">{error}</div>}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className={`flex-1 py-2.5 rounded-lg border ${border} text-sm font-semibold hover:opacity-80`}>ยกเลิก</button>
+            <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-semibold disabled:opacity-60 hover:shadow-lg transition-all">
+              {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Admin ───────────────────────────────────────────────────────────────
+const ORDER_STATUS = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+const ORDER_STATUS_LABEL = { pending: 'รอยืนยัน', confirmed: 'ยืนยันแล้ว', shipped: 'จัดส่งแล้ว', delivered: 'ได้รับแล้ว', cancelled: 'ยกเลิก' }
+const ORDER_STATUS_COLOR = { pending: 'text-yellow-400', confirmed: 'text-blue-400', shipped: 'text-cyan-400', delivered: 'text-green-400', cancelled: 'text-red-400' }
+
 export default function Admin({ isDark }) {
   const [tab, setTab] = useState('dashboard')
   const [data, setData] = useState(null)
@@ -208,7 +310,16 @@ export default function Admin({ isDark }) {
 
   const [courses, setCourses] = useState([])
   const [coursesLoading, setCoursesLoading] = useState(false)
-  const [modal, setModal] = useState(null) // null | { type: 'add' | 'edit' | 'delete', course? }
+  const [modal, setModal] = useState(null)
+
+  const [products, setProducts] = useState([])
+  const [productsLoading, setProductsLoading] = useState(false)
+  const [productModal, setProductModal] = useState(null)
+  const [deleteProductTarget, setDeleteProductTarget] = useState(null)
+
+  const [orders, setOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [orderFilter, setOrderFilter] = useState('')
 
   const border = isDark ? 'border-slate-800' : 'border-slate-200'
   const cardBg = isDark ? 'bg-slate-900' : 'bg-slate-50'
@@ -229,18 +340,34 @@ export default function Admin({ isDark }) {
       .finally(() => setCoursesLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (tab === 'courses') loadCourses()
-  }, [tab, loadCourses])
+  const loadProducts = useCallback(() => {
+    setProductsLoading(true)
+    getProducts({ limit: 100 })
+      .then(({ data }) => setProducts(data.data || []))
+      .catch(console.error)
+      .finally(() => setProductsLoading(false))
+  }, [])
 
-  const handleSaved = () => {
-    setModal(null)
-    loadCourses()
-  }
+  const loadOrders = useCallback(() => {
+    setOrdersLoading(true)
+    getAdminOrders({ status: orderFilter || undefined, limit: 50 })
+      .then(({ data }) => setOrders(data.data || []))
+      .catch(console.error)
+      .finally(() => setOrdersLoading(false))
+  }, [orderFilter])
 
-  const handleDeleted = () => {
-    setModal(null)
-    loadCourses()
+  useEffect(() => { if (tab === 'courses') loadCourses() }, [tab, loadCourses])
+  useEffect(() => { if (tab === 'products') loadProducts() }, [tab, loadProducts])
+  useEffect(() => { if (tab === 'orders') loadOrders() }, [tab, loadOrders])
+
+  const handleSaved = () => { setModal(null); loadCourses() }
+  const handleDeleted = () => { setModal(null); loadCourses() }
+
+  const handleUpdateOrderStatus = async (orderId, status) => {
+    try {
+      await updateOrderStatus(orderId, { status })
+      loadOrders()
+    } catch (err) { console.error(err) }
   }
 
   const stats = [
@@ -255,7 +382,7 @@ export default function Admin({ isDark }) {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <div className={`flex gap-1 p-1 rounded-xl border ${border} ${cardBg}`}>
-          {[{ id: 'dashboard', label: 'ภาพรวม' }, { id: 'courses', label: 'จัดการคอร์ส' }].map(t => (
+          {[{ id: 'dashboard', label: 'ภาพรวม' }, { id: 'courses', label: 'จัดการคอร์ส' }, { id: 'products', label: 'จัดการสินค้า' }, { id: 'orders', label: 'คำสั่งซื้อ' }].map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
@@ -430,7 +557,132 @@ export default function Admin({ isDark }) {
         </div>
       )}
 
-      {/* Modals */}
+      {/* ── PRODUCTS TAB ── */}
+      {tab === 'products' && (
+        <div>
+          <div className="flex items-center justify-between mb-5">
+            <p className={`text-sm ${muted}`}>{products.length} สินค้าทั้งหมด</p>
+            <button onClick={() => setProductModal({ type: 'add' })}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-cyan-500/30 transition-all">
+              <Plus size={16} /> เพิ่มสินค้า
+            </button>
+          </div>
+          {productsLoading ? (
+            <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className={`h-20 rounded-xl border-2 ${border} animate-pulse ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />)}</div>
+          ) : products.length === 0 ? (
+            <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border-2 border-dashed ${border}`}>
+              <Package size={40} className={`${muted} mb-3`} />
+              <p className={`${muted} text-sm`}>ยังไม่มีสินค้า</p>
+              <button onClick={() => setProductModal({ type: 'add' })} className="mt-4 px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm font-semibold">เพิ่มสินค้าแรก</button>
+            </div>
+          ) : (
+            <div className={`rounded-2xl border-2 ${border} overflow-hidden`}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className={`border-b ${border} ${cardBg}`}>
+                    <th className={`text-left px-4 py-3 font-semibold ${muted}`}>สินค้า</th>
+                    <th className={`text-left px-4 py-3 font-semibold ${muted} hidden md:table-cell`}>หมวดหมู่</th>
+                    <th className={`text-left px-4 py-3 font-semibold ${muted} hidden md:table-cell`}>ราคา</th>
+                    <th className={`text-center px-4 py-3 font-semibold ${muted}`}>สต็อก</th>
+                    <th className={`text-center px-4 py-3 font-semibold ${muted}`}>สถานะ</th>
+                    <th className={`text-right px-4 py-3 font-semibold ${muted}`}>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map(p => (
+                    <tr key={p.id} className={`border-b ${border} last:border-0 transition-colors`}>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{p.name}</div>
+                        <div className={`text-xs ${muted}`}>{p.sku}</div>
+                      </td>
+                      <td className={`px-4 py-3 hidden md:table-cell ${muted}`}>{p.category}</td>
+                      <td className="px-4 py-3 hidden md:table-cell font-semibold text-cyan-400">฿{Number(p.price).toLocaleString()}</td>
+                      <td className={`px-4 py-3 text-center font-semibold ${p.stock_quantity > 0 ? 'text-green-400' : 'text-red-400'}`}>{p.stock_quantity}</td>
+                      <td className="px-4 py-3 text-center">
+                        {p.is_available
+                          ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400"><Eye size={10} /> วางขาย</span>
+                          : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-slate-500/20 text-slate-400"><EyeOff size={10} /> ซ่อน</span>
+                        }
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => setProductModal({ type: 'edit', product: p })} className={`p-1.5 rounded-lg hover:bg-blue-500/20 hover:text-blue-400 ${muted} transition-colors`}><Pencil size={15} /></button>
+                          <button onClick={() => setDeleteProductTarget(p)} className={`p-1.5 rounded-lg hover:bg-red-500/20 hover:text-red-400 ${muted} transition-colors`}><Trash2 size={15} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── ORDERS TAB ── */}
+      {tab === 'orders' && (
+        <div>
+          <div className="flex items-center gap-3 mb-5 flex-wrap">
+            {['', ...ORDER_STATUS].map(s => (
+              <button key={s} onClick={() => setOrderFilter(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${orderFilter === s ? 'bg-cyan-500 text-white border-cyan-500' : `${border} ${muted} hover:border-cyan-500/50`}`}>
+                {s === '' ? 'ทั้งหมด' : ORDER_STATUS_LABEL[s]}
+              </button>
+            ))}
+          </div>
+          {ordersLoading ? (
+            <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className={`h-20 rounded-xl border-2 ${border} animate-pulse ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />)}</div>
+          ) : orders.length === 0 ? (
+            <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border-2 border-dashed ${border}`}>
+              <ShoppingBag size={40} className={`${muted} mb-3`} />
+              <p className={`${muted} text-sm`}>ยังไม่มีคำสั่งซื้อ</p>
+            </div>
+          ) : (
+            <div className={`rounded-2xl border-2 ${border} overflow-hidden`}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className={`border-b ${border} ${cardBg}`}>
+                    <th className={`text-left px-4 py-3 font-semibold ${muted}`}>ออเดอร์</th>
+                    <th className={`text-left px-4 py-3 font-semibold ${muted} hidden md:table-cell`}>ลูกค้า</th>
+                    <th className={`text-left px-4 py-3 font-semibold ${muted} hidden lg:table-cell`}>สินค้า</th>
+                    <th className={`text-right px-4 py-3 font-semibold ${muted}`}>ยอดรวม</th>
+                    <th className={`text-center px-4 py-3 font-semibold ${muted}`}>สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map(o => (
+                    <tr key={o.id} className={`border-b ${border} last:border-0 transition-colors`}>
+                      <td className="px-4 py-3">
+                        <div className="font-mono text-xs text-cyan-400">#{o.order_id.slice(0, 8).toUpperCase()}</div>
+                        <div className={`text-xs ${muted}`}>{new Date(o.created_at).toLocaleDateString('th-TH')}</div>
+                      </td>
+                      <td className={`px-4 py-3 hidden md:table-cell`}>
+                        <div className="font-medium">{o.first_name} {o.last_name}</div>
+                        <div className={`text-xs ${muted}`}>{o.email}</div>
+                      </td>
+                      <td className={`px-4 py-3 hidden lg:table-cell text-xs ${muted}`}>
+                        {(o.items || []).map((i, idx) => <div key={idx}>{i.name} x{i.quantity}</div>)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-cyan-400">฿{Number(o.total_amount).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-center">
+                        <select
+                          value={o.status}
+                          onChange={e => handleUpdateOrderStatus(o.order_id, e.target.value)}
+                          className={`text-xs px-2 py-1 rounded-lg border ${border} ${isDark ? 'bg-slate-800' : 'bg-white'} ${ORDER_STATUS_COLOR[o.status]} font-semibold focus:outline-none`}
+                        >
+                          {ORDER_STATUS.map(s => <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>)}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Course Modals */}
       {modal?.type === 'add' && (
         <CourseModal isDark={isDark} course={null} onClose={() => setModal(null)} onSaved={handleSaved} />
       )}
@@ -439,6 +691,28 @@ export default function Admin({ isDark }) {
       )}
       {modal?.type === 'delete' && (
         <DeleteConfirm isDark={isDark} course={modal.course} onClose={() => setModal(null)} onDeleted={handleDeleted} />
+      )}
+
+      {/* Product Modals */}
+      {productModal?.type === 'add' && (
+        <ProductModal isDark={isDark} product={null} onClose={() => setProductModal(null)} onSaved={() => { setProductModal(null); loadProducts() }} />
+      )}
+      {productModal?.type === 'edit' && (
+        <ProductModal isDark={isDark} product={productModal.product} onClose={() => setProductModal(null)} onSaved={() => { setProductModal(null); loadProducts() }} />
+      )}
+      {deleteProductTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteProductTarget(null)} />
+          <div className={`relative w-full max-w-sm rounded-2xl border-2 ${border} ${isDark ? 'bg-slate-900' : 'bg-white'} shadow-2xl p-6`}>
+            <h2 className="text-lg font-bold mb-2">ยืนยันการลบ</h2>
+            <p className={`text-sm mb-6 ${muted}`}>ต้องการลบ <span className="font-semibold">{deleteProductTarget.name}</span> ใช่หรือไม่?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteProductTarget(null)} className={`flex-1 py-2.5 rounded-lg border ${border} text-sm font-semibold`}>ยกเลิก</button>
+              <button onClick={async () => { await deleteProduct(deleteProductTarget.product_id); setDeleteProductTarget(null); loadProducts() }}
+                className="flex-1 py-2.5 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600">ลบสินค้า</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

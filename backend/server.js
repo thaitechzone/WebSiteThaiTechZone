@@ -41,6 +41,8 @@ const paymentRoutes = require('./routes/payment');
 const contactRoutes = require('./routes/contact');
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
+const productRoutes = require('./routes/products');
+const orderRoutes = require('./routes/orders');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -50,6 +52,8 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
