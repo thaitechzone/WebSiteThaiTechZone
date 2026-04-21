@@ -216,6 +216,21 @@ services:
       nginx:
         condition: service_started
 
+  # ─────────────────────────────────────────────
+  # CLOUDFLARE TUNNEL — prod เท่านั้น
+  # ─────────────────────────────────────────────
+  cloudflared:
+    profiles: [prod]
+    image: cloudflare/cloudflared:latest
+    container_name: thaitechzone-cloudflared
+    restart: always
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - thaitechzone-network
+    depends_on:
+      nginx:
+        condition: service_started
+
 volumes:
   postgres_data:          # ⚠️ ข้อมูล DB — ห้ามลบ
   uploads_data:           # ⚠️ ไฟล์ที่ upload — ห้ามลบ
