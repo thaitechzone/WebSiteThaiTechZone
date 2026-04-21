@@ -224,6 +224,8 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: thaitechzone-cloudflared
     restart: always
+    env_file:
+      - .env.production
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
       - thaitechzone-network
