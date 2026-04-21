@@ -1,46 +1,45 @@
-# Deploy Production บน VPS
+# Deploy Guide — ThaiTechZone
 
-## สิ่งที่ต้องมีก่อน
-- VPS ที่ติดตั้ง Docker + Docker Compose แล้ว
-- Nginx Proxy Manager (NPM) ทำงานอยู่บน VPS
-- Domain ที่ชี้ DNS มาที่ IP ของ VPS แล้ว
-- SSH access เข้า VPS
+## สถาปัตยกรรม (Production)
 
----
-
-## ขั้นตอนที่ 1 — เตรียม VPS
-
-```bash
-# SSH เข้า VPS
-ssh user@your-vps-ip
-
-# ตรวจสอบ Docker พร้อมใช้งาน
-docker --version
-docker compose version
-
-# ตรวจสอบ port 8080 ว่างอยู่ (จะใช้รับ traffic จาก NPM)
-ss -tlnp | grep 8080
+```
+Internet
+   │
+Cloudflare DNS  (A record → Server IP)
+   │
+:80 / :443
+   │
+Nginx Proxy Manager  (container: thaitechzone-npm)
+   │  proxy → nginx:80  (docker internal network)
+   │
+Nginx App            (container: thaitechzone-nginx)
+   ├── /api/*  →  Backend   (container: thaitechzone-backend :3000)
+   └── /*      →  Frontend  (container: thaitechzone-frontend :80)
+                      │
+                   PostgreSQL (container: thaitechzone-db :5432)
 ```
 
 ---
 
-## ขั้นตอนที่ 2 — Clone โปรเจ็กต์
+## Deploy ครั้งแรก
+
+### 1. เตรียม Server
 
 ```bash
-# Clone repo ลง VPS
+ssh user@<server-ip>
+
+# ตรวจสอบ Docker พร้อมใช้
+docker --version
+docker compose version
+
+# Clone โปรเจ็กต์
 git clone https://github.com/thaitechzone/WebSiteThaiTechZone.git
 cd WebSiteThaiTechZone
 ```
 
----
-
-## ขั้นตอนที่ 3 — ตั้งค่า Environment
+### 2. ตั้งค่า Environment
 
 ```bash
-# คัดลอก template
-cp .env.production .env.production.local
-
-# แก้ไขค่าจริง
 nano .env.production
 ```
 
@@ -54,21 +53,12 @@ DB_HOST=postgres
 DB_PORT=5432
 DB_NAME=thaitechzone_db
 DB_USER=thaitechzone
-DB_PASSWORD=<strong-password>        # ← เปลี่ยน
+DB_PASSWORD=<strong-password>
 
-JWT_SECRET=<random-64-chars>          # ← เปลี่ยน
+JWT_SECRET=<random-64-chars>
 JWT_EXPIRES_IN=7d
 
-FRONTEND_URL=https://thaitechzone.com # ← domain จริง
-
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-
-STRIPE_SECRET_KEY=sk_live_xxx
-STRIPE_PUBLISHABLE_KEY=pk_live_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
+FRONTEND_URL=https://yourdomain.com
 ```
 
 สร้าง JWT_SECRET แบบ random:
@@ -76,16 +66,15 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ```
 
----
-
-## ขั้นตอนที่ 4 — Deploy
+### 3. Build และรัน
 
 ```bash
-# Build และรัน production containers
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose --profile prod up -d --build
+```
 
-# ตรวจสอบว่าทุก container ขึ้นปกติ
-docker compose -f docker-compose.prod.yml ps
+ตรวจสอบทุก container ขึ้นปกติ:
+```bash
+docker compose --profile prod ps
 ```
 
 ผลลัพธ์ที่ควรได้:
@@ -95,29 +84,21 @@ thaitechzone-db         Up (healthy)
 thaitechzone-backend    Up (healthy)
 thaitechzone-frontend   Up (healthy)
 thaitechzone-nginx      Up
+thaitechzone-npm        Up
 ```
 
-ทดสอบ backend ตอบสนองก่อนตั้ง NPM:
-```bash
-curl http://localhost:8080/api/health
-# ได้: {"status":"ok",...}
-```
+### 4. ตั้งค่า Nginx Proxy Manager
 
----
-
-## ขั้นตอนที่ 5 — ตั้งค่า Nginx Proxy Manager
-
-1. เปิด NPM: `http://your-vps-ip:81`
-2. เข้าเมนู **Proxy Hosts** → **Add Proxy Host**
-3. กรอกข้อมูล:
+1. เปิด Admin UI: `http://<server-ip>:81`
+2. Login ครั้งแรก: `admin@example.com` / `changeme` (ระบบบังคับเปลี่ยนทันที)
+3. เมนู **Proxy Hosts** → **Add Proxy Host**
 
 | Field | ค่า |
 |-------|-----|
-| Domain Names | `thaitechzone.com` |
+| Domain Names | `yourdomain.com`, `www.yourdomain.com` |
 | Scheme | `http` |
-| Forward Hostname | `localhost` |
-| Forward Port | `8080` |
-| Cache Assets | ✅ |
+| Forward Hostname | `nginx` |
+| Forward Port | `80` |
 | Block Common Exploits | ✅ |
 
 4. แท็บ **SSL**:
@@ -126,50 +107,104 @@ curl http://localhost:8080/api/health
    - HTTP/2 Support → ✅
    - กด **Save**
 
-NPM จะ auto-renew SSL ให้ทุก 90 วัน
+### 5. ตั้งค่า Cloudflare DNS
 
----
+| Type | Name | Content | Proxy Status |
+|------|------|---------|--------------|
+| A | `@` | `<server-ip>` | DNS only (เมฆเทา) |
+| A | `www` | `<server-ip>` | DNS only (เมฆเทา) |
 
-## ขั้นตอนที่ 6 — ทดสอบ
+> ใช้ **DNS only** ระหว่าง Let's Encrypt ออก certificate  
+> หลัง SSL พร้อมแล้วค่อยเปลี่ยนเป็น **Proxied** (เมฆส้ม)
+
+### 6. ทดสอบ
 
 ```bash
-# ทดสอบ HTTPS
-curl https://thaitechzone.com/api/health
-
-# ดู logs ถ้ามีปัญหา
-docker compose -f docker-compose.prod.yml logs -f
+curl https://yourdomain.com/api/health
+# ควรได้: {"status":"ok",...}
 ```
 
-เปิด browser: `https://thaitechzone.com`
-
 ---
 
-## การ Update โค้ด (ไม่กระทบ DB)
+## อัปเดต Production
 
+ดึงโค้ดใหม่ก่อนเสมอ:
 ```bash
-# ดึงโค้ดใหม่
 git pull
+```
 
-# Update เฉพาะ backend
-docker compose -f docker-compose.prod.yml up -d --build --no-deps backend
+| ต้องการอัปเดต | คำสั่ง |
+|--------------|--------|
+| Backend เท่านั้น | `docker compose --profile prod up -d --build --no-deps backend` |
+| Frontend เท่านั้น | `docker compose --profile prod up -d --build --no-deps frontend` |
+| Backend + Frontend | `docker compose --profile prod up -d --build --no-deps backend frontend` |
+| Nginx config | `docker compose --profile prod restart nginx` |
 
-# Update เฉพาะ frontend
-docker compose -f docker-compose.prod.yml up -d --build --no-deps frontend
+---
 
-# Update ทั้งคู่
-docker compose -f docker-compose.prod.yml up -d --build --no-deps backend frontend
+## Local Development
+
+### รันครั้งแรก
+
+```bash
+cp backend/.env.example backend/.env
+docker compose --profile dev up -d
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend (Vite) | http://localhost:5173 |
+| Backend API | http://localhost:3000 |
+| pgAdmin | http://localhost:5050 |
+
+### อัปเดต Dev
+
+```bash
+# Backend
+docker compose --profile dev up -d --build --no-deps backend-dev
+
+# Frontend
+docker compose --profile dev up -d --build --no-deps frontend-dev
 ```
 
 ---
 
-## Backup ข้อมูล DB
+## หยุด Services
+
+```bash
+# Dev
+docker compose --profile dev down
+
+# Prod
+docker compose --profile prod down
+```
+
+> ⚠️ **ห้ามรัน `docker compose down -v`** — จะลบ volume ข้อมูล DB และ SSL certificates
+
+---
+
+## ดู Logs
+
+```bash
+# ทุก service
+docker compose --profile prod logs -f
+
+# เฉพาะ service
+docker compose --profile prod logs -f backend
+docker compose --profile prod logs -f nginx
+docker compose --profile prod logs -f npm
+```
+
+---
+
+## Backup Database
 
 ```bash
 # Backup
 docker exec thaitechzone-db pg_dump -U thaitechzone thaitechzone_db > backup_$(date +%Y%m%d).sql
 
-# Restore (ถ้าจำเป็น)
-docker exec -i thaitechzone-db psql -U thaitechzone thaitechzone_db < backup_20260412.sql
+# Restore
+cat backup_YYYYMMDD.sql | docker exec -i thaitechzone-db psql -U thaitechzone thaitechzone_db
 ```
 
 ---
@@ -177,15 +212,15 @@ docker exec -i thaitechzone-db psql -U thaitechzone thaitechzone_db < backup_202
 ## แก้ปัญหาเบื้องต้น
 
 ```bash
-# ดู logs service ที่มีปัญหา
+# ดู log service ที่มีปัญหา
 docker logs thaitechzone-backend --tail 50
-docker logs thaitechzone-frontend --tail 50
 docker logs thaitechzone-nginx --tail 50
+docker logs thaitechzone-npm --tail 50
 
 # Restart service เดียว
-docker compose -f docker-compose.prod.yml restart backend
+docker compose --profile prod restart backend
 
-# เช็ค resource usage
+# เช็ค resource
 docker stats
 ```
 
@@ -193,6 +228,6 @@ docker stats
 
 ## ⚠️ ข้อควรระวัง
 
-- **ห้ามรัน** `docker compose down -v` — จะลบข้อมูล DB
+- **ห้ามรัน** `docker compose down -v` — จะลบข้อมูล DB และ SSL certificates
 - **ห้าม commit** `.env.production` ขึ้น git
 - Backup DB ก่อนทุกครั้งที่ update โครงสร้าง database

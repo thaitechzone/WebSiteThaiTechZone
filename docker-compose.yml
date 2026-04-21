@@ -175,16 +175,14 @@ services:
       retries: 3
 
   # ─────────────────────────────────────────────
-  # NGINX PROD — reverse proxy
-  # expose port 8080 → Nginx Proxy Manager forward มาที่นี่
+  # NGINX PROD — reverse proxy (internal เท่านั้น)
+  # NPM proxy มาที่ nginx:80 ผ่าน docker network
   # ─────────────────────────────────────────────
   nginx:
     profiles: [prod]
     image: nginx:alpine
     container_name: thaitechzone-nginx
     restart: always
-    ports:
-      - "8080:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
@@ -195,9 +193,34 @@ services:
       frontend:
         condition: service_healthy
 
+  # ─────────────────────────────────────────────
+  # NGINX PROXY MANAGER — prod เท่านั้น
+  # Admin UI : http://<server-ip>:81
+  # HTTP     : 80  |  HTTPS : 443
+  # ─────────────────────────────────────────────
+  npm:
+    profiles: [prod]
+    image: jc21/nginx-proxy-manager:latest
+    container_name: thaitechzone-npm
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - thaitechzone-network
+    depends_on:
+      nginx:
+        condition: service_started
+
 volumes:
   postgres_data:          # ⚠️ ข้อมูล DB — ห้ามลบ
   uploads_data:           # ⚠️ ไฟล์ที่ upload — ห้ามลบ
+  npm_data:               # ⚠️ config NPM — ห้ามลบ
+  npm_letsencrypt:        # ⚠️ SSL certificates — ห้ามลบ
   pgadmin_data:
   backend_node_modules:
   frontend_node_modules:
